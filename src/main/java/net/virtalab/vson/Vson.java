@@ -5,6 +5,8 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonParseException;
 import net.virtalab.vson.annotation.EmptyAllowed;
 import net.virtalab.vson.annotation.Optional;
+import net.virtalab.vson.exception.MalformedJsonException;
+import net.virtalab.vson.exception.VsonException;
 
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
@@ -17,14 +19,31 @@ import java.util.List;
  * Gson wrapper with dematerialized object validation
  */
 public class Vson {
+    /**
+     * Google GSON instance
+     */
     private Gson myGson;
-
+    /**
+     * Property that indicates that parser must stop just after first fail and do not collect all fails with given JSON
+     */
     boolean stopOnFirstError = true;
 
+    /**
+     * Constructs parser instance and creates GSON with default options
+     */
     public Vson(){
         this.myGson = new GsonBuilder().create();
     }
 
+    /**
+     * Creates object of given Type from JSON (its String representation)
+     *
+     * @param json JSON as String
+     * @param typeOfT Class of resulting object
+     * @param <T> Generic for resulting type
+     * @return Resulting object of Type which defined in typeOfT
+     * @throws VsonException when parsing fails
+     */
     public <T> T fromJson(String json, Type typeOfT) throws VsonException {
         T jsonedObject;
         try{
@@ -124,30 +143,83 @@ public class Vson {
         return jsonedObject;
     }
 
+    /**
+     * Creates String with JSON from provided Object
+     *
+     * @param src Object from which JSON should be created
+     * @param typeOfSrc Class of object given at src param
+     * @return string that represent Object as JSON
+     */
     public String toJson(Object src, Class<?> typeOfSrc){
         return myGson.toJson(src, typeOfSrc);
     }
 
+    /**
+     * Enum with error reason
+     */
     private enum ErrorType{
+        /**
+         * Field not present or null
+         */
         FIELD_NULL,
-        FIELD_EMPTY;
+        /**
+         * Field filed with empty values (for String: 0-char String, for Arrays and Collections: when it has no values)
+         */
+        FIELD_EMPTY
     }
 
+    /**
+     * Enum indicates nature of field
+     */
     private enum FieldType{
+        /**
+         * line with chars (java.lang.String)
+         */
         STRING,
+        /**
+         * Simple Java Array
+         */
         ARRAY,
-        COLLECTION;
+        /**
+         * Structure that implements Collection (for example Map,Set,List)
+         */
+        COLLECTION
     }
 
+    /**
+     * Describes Error Structure
+     */
     private class ErrorStruct{
+        /**
+         * name of field
+         */
         String fieldName;
+        /**
+         * Reason of error (@see #ErrorType)
+         */
         ErrorType errorType;
+        /**
+         * Nature of field type (@see #FieldType)
+         */
         FieldType fieldType;
 
+        /**
+         * Constructs struct from only field name.
+         * Used when we have NULL field (@see #ErrorType.FIELD_NULL)
+         *
+         * @param fieldName name of field for error reporting
+         */
         ErrorStruct(String fieldName){
             this.fieldName = fieldName;
             this.errorType = ErrorType.FIELD_NULL;
         }
+
+        /**
+         * Used to construct object when field is empty (@see #ErrorType.FIELD_EMPTY for emptiness criteria)
+         *
+         * @param fieldName name of field for error reporting
+         * @param fieldType nature of field's type (@see #FieldType)
+         */
         ErrorStruct(String fieldName, FieldType fieldType){
             this.fieldName = fieldName;
             this.errorType = ErrorType.FIELD_EMPTY;
