@@ -31,8 +31,9 @@ public class Vson {
     /**
      * Constructs parser instance and creates GSON with default options
      */
+    //TODO Property for disableHtmlEscaping
     public Vson(){
-        this.myGson = new GsonBuilder().create();
+        this.myGson = new GsonBuilder().disableHtmlEscaping().create();
     }
 
     /**
