@@ -3,10 +3,13 @@ package net.virtalab.vson;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonParseException;
+import com.google.gson.JsonSyntaxException;
 import net.virtalab.vson.annotation.EmptyAllowed;
 import net.virtalab.vson.annotation.Optional;
 import net.virtalab.vson.exception.MalformedJsonException;
+import net.virtalab.vson.exception.NoJsonFoundException;
 import net.virtalab.vson.exception.VsonException;
+import net.virtalab.vson.exception.WrongJsonStructureException;
 
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
@@ -44,14 +47,34 @@ public class Vson {
      * @param <T> Generic for resulting type
      * @return Resulting object of Type which defined in typeOfT
      * @throws VsonException when parsing fails
+     * @throws com.google.gson.JsonSyntaxException when passed String contains JSON with broken syntax
      */
     public <T> T fromJson(String json, Type typeOfT) throws VsonException {
         T jsonedObject;
         try{
            jsonedObject = myGson.fromJson(json,typeOfT);
+        }catch (JsonSyntaxException jse){
+            if(jse.getCause() instanceof IllegalStateException){
+                //when Json is malformed (or not Json at all) - explanation is Okay
+                String message = jse.getCause().getMessage();
+                if(message.contains("BEGIN_OBJECT")){
+                    //Not a JSON
+                    throw new NoJsonFoundException();
+                } else {
+                    //Param error
+                    throw new WrongJsonStructureException();//update it
+                }
+            } else if(jse.getCause() instanceof MalformedJsonException){
+                //when syntax is incorrect - explanation is Okay
+                throw new JsonSyntaxException(jse.getCause().getMessage());
+            } else {
+                jsonedObject=null;
+            }
         }catch (JsonParseException jpe){
             throw new VsonException(jpe);
         }
+
+
         if(jsonedObject==null){ throw new VsonException("Cannot operate on empty object"); }
 
         List<ErrorStruct> errors = new ArrayList<ErrorStruct>();
