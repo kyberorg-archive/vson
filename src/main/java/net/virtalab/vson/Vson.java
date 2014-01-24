@@ -4,7 +4,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonParseException;
 import com.google.gson.JsonSyntaxException;
-import net.virtalab.vson.annotation.EmptyAllowed;
+import net.virtalab.vson.annotation.EmptyValueAllowed;
 import net.virtalab.vson.annotation.Optional;
 import net.virtalab.vson.exception.MalformedJsonException;
 import net.virtalab.vson.exception.NoJsonFoundException;
@@ -107,7 +107,7 @@ public class Vson {
             if(fValue  instanceof String){
                 String s = (String) fValue;
                 if(s.isEmpty()){
-                    if(f.getAnnotation(EmptyAllowed.class) ==null){
+                    if(f.getAnnotation(EmptyValueAllowed.class) ==null){
                         if(stopOnFirstError){
                             throw new MalformedJsonException("Value of "+f.getName().toUpperCase()+ " cannot be empty.");
                         } else {
