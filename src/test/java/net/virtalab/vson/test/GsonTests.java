@@ -18,10 +18,10 @@ public class GsonTests extends Assert {
         this.gson = new Gson();
     }
 
-    @Test
+    @Test(expected = Exception.class)
     public void customStringTest(){
         //JSE <- IllegalStateE
-        String str = "I am not JSON {";
+        String str = "{} I am not JSON";
         MyJson o = gson.fromJson(str, MyJson.class);
         assertTrue(true);
     }
@@ -62,8 +62,13 @@ public class GsonTests extends Assert {
     public void badTypeAtObjectImplTest(){
         //JSE <- ISE (norm explain)
         String str = "{key:ss, value:aaa}";
-        MyJson o = gson.fromJson(str,MyJson.class);
-        assertTrue(o.getKey() != 0);
+        try{
+            MyJson o = gson.fromJson(str,MyJson.class);
+        }catch (JsonSyntaxException jse){
+            String message = jse.getCause().getMessage();
+
+            throw new RuntimeException(message);
+        }
     }
 
     @Test

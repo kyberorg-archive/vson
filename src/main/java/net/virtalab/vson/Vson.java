@@ -4,9 +4,9 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonParseException;
 import com.google.gson.JsonSyntaxException;
+import com.google.gson.stream.MalformedJsonException;
 import net.virtalab.vson.annotation.EmptyValueAllowed;
 import net.virtalab.vson.annotation.Optional;
-import net.virtalab.vson.exception.MalformedJsonException;
 import net.virtalab.vson.exception.NoJsonFoundException;
 import net.virtalab.vson.exception.VsonException;
 import net.virtalab.vson.exception.WrongJsonStructureException;
@@ -30,6 +30,7 @@ public class Vson {
      * Property that indicates that parser must stop just after first fail and do not collect all fails with given JSON
      */
     boolean stopOnFirstError = true;
+    //TODO property for enable/disable strict parsing
 
     /**
      * Constructs parser instance and creates GSON with default options
@@ -46,8 +47,10 @@ public class Vson {
      * @param typeOfT Class of resulting object
      * @param <T> Generic for resulting type
      * @return Resulting object of Type which defined in typeOfT
-     * @throws VsonException when parsing fails
-     * @throws com.google.gson.JsonSyntaxException when passed String contains JSON with broken syntax
+     * @throws NoJsonFoundException when provided String is not valid JSON, but simple string
+     * @throws JsonSyntaxException when passed String contains JSON with broken syntax
+     * @throws WrongJsonStructureException when parsed object contains structure which is not valid representation of object of resulting type
+     * @throws VsonException when parser internal error occurred or parser cannot access fields at requested object due to Security policies
      */
     public <T> T fromJson(String json, Type typeOfT) throws VsonException {
         T jsonedObject;
@@ -62,7 +65,7 @@ public class Vson {
                     throw new NoJsonFoundException();
                 } else {
                     //Param error
-                    throw new WrongJsonStructureException();//update it
+                    throw new WrongJsonStructureException(message);//update it
                 }
             } else if(jse.getCause() instanceof MalformedJsonException){
                 //when syntax is incorrect - explanation is Okay
@@ -74,9 +77,15 @@ public class Vson {
             throw new VsonException(jpe);
         }
 
-
         if(jsonedObject==null){ throw new VsonException("Cannot operate on empty object"); }
 
+        //TODO if strict enabled
+        jsonedObject = parseStrictly(jsonedObject);
+
+        return jsonedObject;
+    }
+
+    public <T> T parseStrictly(T jsonedObject){
         List<ErrorStruct> errors = new ArrayList<ErrorStruct>();
 
         Field[] fields = jsonedObject.getClass().getDeclaredFields();
@@ -84,9 +93,9 @@ public class Vson {
         for(Field f: fields){
             f.setAccessible(true);
 
-            Object fValue = null;
+            Object fValue;
             try{
-               fValue = f.get(jsonedObject);
+                fValue = f.get(jsonedObject);
             }catch (IllegalAccessException iae){
                 //we are here when unable to get field value because Java Language Policies
                 throw new VsonException(iae);
@@ -96,7 +105,7 @@ public class Vson {
             if(fValue ==null){
                 if(f.getAnnotation(Optional.class) ==null){
                     if(stopOnFirstError){
-                        throw new MalformedJsonException("Field "+f.getName().toUpperCase()+" is not present or null.");
+                        throw new WrongJsonStructureException("Field "+f.getName().toUpperCase()+" is not present or null.");
                     } else {
                         errors.add(new ErrorStruct(f.getName()));
                     }
@@ -109,7 +118,7 @@ public class Vson {
                 if(s.isEmpty()){
                     if(f.getAnnotation(EmptyValueAllowed.class) ==null){
                         if(stopOnFirstError){
-                            throw new MalformedJsonException("Value of "+f.getName().toUpperCase()+ " cannot be empty.");
+                            throw new WrongJsonStructureException("Value of "+f.getName().toUpperCase()+ " cannot be empty.");
                         } else {
                             errors.add(new ErrorStruct(f.getName(),FieldType.STRING));
                         }
@@ -117,29 +126,29 @@ public class Vson {
                 }
             }
 
-             //check on empty array
-             if(f.getType().isArray()){
+            //check on empty array
+            if(f.getType().isArray()){
                 int arrLenght = Array.getLength(fValue);
                 if(arrLenght == 0){
                     if(stopOnFirstError){
-                        throw new MalformedJsonException("Value of "+f.getName().toUpperCase()+ " must have at least one element.");
+                        throw new WrongJsonStructureException("Value of "+f.getName().toUpperCase()+ " must have at least one element.");
                     } else {
                         errors.add(new ErrorStruct(f.getName(),FieldType.ARRAY));
                     }
                 }
-             }
+            }
 
-             //check on empty collection
-             if(fValue instanceof Collection){
+            //check on empty collection
+            if(fValue instanceof Collection){
                 Collection c = (Collection) fValue;
                 if(c.isEmpty()){
                     if(stopOnFirstError){
-                            throw new MalformedJsonException("Value of "+f.getName().toUpperCase()+ " must have at least one element.");
-                        } else {
-                            errors.add(new ErrorStruct(f.getName(),FieldType.COLLECTION));
-                        }
+                        throw new WrongJsonStructureException("Value of "+f.getName().toUpperCase()+ " must have at least one element.");
+                    } else {
+                        errors.add(new ErrorStruct(f.getName(),FieldType.COLLECTION));
                     }
                 }
+            }
         }
 
         //error reporting
@@ -163,8 +172,12 @@ public class Vson {
                 }
             }
         }
-
-        return jsonedObject;
+        //result
+        if(errors.size()!=0){
+            throw new WrongJsonStructureException(sb.toString());
+        } else {
+            return jsonedObject;
+        }
     }
 
     /**
