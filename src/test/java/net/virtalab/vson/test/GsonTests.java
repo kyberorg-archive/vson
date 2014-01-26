@@ -79,4 +79,11 @@ public class GsonTests extends Assert {
         assertTrue(o.getValue() == null);
     }
 
+    @Test
+    public void wrongObjectPassedTest(){
+        String str = "{\"test\":\"value\"}";
+        MyJson o = gson.fromJson(str,MyJson.class);
+        assertNotNull(o);
+    }
+
 }

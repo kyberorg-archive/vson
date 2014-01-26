@@ -1,8 +1,10 @@
 package net.virtalab.vson.test;
 
 import net.virtalab.vson.Vson;
+import net.virtalab.vson.test.type.UptimeFormat;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Test;
 
 /**
  * Parser Tests
@@ -44,5 +46,12 @@ public class IncomingParsingTests extends Assert {
 
     public void EcsapeCharactersTest(){
 
+    }
+
+    @Test
+    public void wrongObjectPassedTest(){
+        String str = "{\"test\":\"value\"}";
+        UptimeFormat o = vson.fromJson(str, UptimeFormat.class);
+        assertNotNull(o);
     }
 }

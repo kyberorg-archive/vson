@@ -53,9 +53,15 @@ public class Vson {
      * @throws VsonException when parser internal error occurred or parser cannot access fields at requested object due to Security policies
      */
     public <T> T fromJson(String json, Type typeOfT) throws VsonException {
+        //protect against Gson returning Null
+        if(json == null){ throw new NoJsonFoundException(); }
+        if(json.equalsIgnoreCase("")){ throw new NoJsonFoundException(); }
+
         T jsonedObject;
         try{
            jsonedObject = myGson.fromJson(json,typeOfT);
+            if(jsonedObject==null){
+                System.err.println("TAASA ja NULL");}
         }catch (JsonSyntaxException jse){
             if(jse.getCause() instanceof IllegalStateException){
                 //when Json is malformed (or not Json at all) - explanation is Okay
@@ -75,9 +81,13 @@ public class Vson {
             }
         }catch (JsonParseException jpe){
             throw new VsonException(jpe);
+        }catch (Exception e){
+            throw new VsonException(e);
         }
+        if(jsonedObject==null){
 
-        if(jsonedObject==null){ throw new VsonException("Cannot operate on empty object"); }
+            throw new VsonException("Cannot operate on empty object");
+        }
 
         //TODO if strict enabled
         jsonedObject = parseStrictly(jsonedObject);
@@ -154,7 +164,7 @@ public class Vson {
         //error reporting
         StringBuilder sb = new StringBuilder();
         for(ErrorStruct error: errors){
-            if(error.errorType==ErrorType.FIELD_NULL){
+            if(error.errorType == ErrorType.FIELD_NULL){
                 sb.append("Field ").append(error.fieldName).append(" is not present or null.");
                 sb.append(" ");
             }
