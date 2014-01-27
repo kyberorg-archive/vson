@@ -1,5 +1,6 @@
 package net.virtalab.vson.test;
 
+import com.google.gson.JsonSyntaxException;
 import net.virtalab.vson.Vson;
 import net.virtalab.vson.test.type.UptimeFormat;
 import org.junit.Assert;
@@ -51,6 +52,13 @@ public class IncomingParsingTests extends Assert {
     @Test
     public void wrongObjectPassedTest(){
         String str = "{\"test\":\"value\"}";
+        UptimeFormat o = vson.fromJson(str, UptimeFormat.class);
+        assertNotNull(o);
+    }
+
+    @Test(expected = JsonSyntaxException.class)
+    public void NoClosingBracketTest(){
+        String str = "{\"units\":\"s\"";
         UptimeFormat o = vson.fromJson(str, UptimeFormat.class);
         assertNotNull(o);
     }

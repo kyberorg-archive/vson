@@ -4,7 +4,6 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonParseException;
 import com.google.gson.JsonSyntaxException;
-import com.google.gson.stream.MalformedJsonException;
 import net.virtalab.vson.annotation.EmptyValueAllowed;
 import net.virtalab.vson.annotation.Optional;
 import net.virtalab.vson.exception.NoJsonFoundException;
@@ -73,11 +72,9 @@ public class Vson {
                     //Param error
                     throw new WrongJsonStructureException(message);//update it
                 }
-            } else if(jse.getCause() instanceof MalformedJsonException){
+            } else {
                 //when syntax is incorrect - explanation is Okay
                 throw new JsonSyntaxException(jse.getCause().getMessage());
-            } else {
-                jsonedObject=null;
             }
         }catch (JsonParseException jpe){
             throw new VsonException(jpe);
@@ -85,7 +82,6 @@ public class Vson {
             throw new VsonException(e);
         }
         if(jsonedObject==null){
-
             throw new VsonException("Cannot operate on empty object");
         }
 
