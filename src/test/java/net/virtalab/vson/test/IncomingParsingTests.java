@@ -2,6 +2,9 @@ package net.virtalab.vson.test;
 
 import com.google.gson.JsonSyntaxException;
 import net.virtalab.vson.Vson;
+import net.virtalab.vson.exception.WrongJsonStructureException;
+import net.virtalab.vson.test.type.enumed.ComplexObj;
+import net.virtalab.vson.test.type.enumed.RstType;
 import net.virtalab.vson.test.type.UptimeFormat;
 import org.junit.Assert;
 import org.junit.Before;
@@ -49,7 +52,7 @@ public class IncomingParsingTests extends Assert {
 
     }
 
-    @Test
+    @Test(expected = WrongJsonStructureException.class)
     public void wrongObjectPassedTest(){
         String str = "{\"test\":\"value\"}";
         UptimeFormat o = vson.fromJson(str, UptimeFormat.class);
@@ -61,5 +64,13 @@ public class IncomingParsingTests extends Assert {
         String str = "{\"units\":\"s\"";
         UptimeFormat o = vson.fromJson(str, UptimeFormat.class);
         assertNotNull(o);
+    }
+
+    @Test(expected = WrongJsonStructureException.class)
+    public void wrongComplexTypeParseToTest(){
+        String str = "{\"action\":\"reset\",\"type\":\"AUTOMATIC\"}";
+        ComplexObj obj = vson.fromJson(str,ComplexObj.class);
+        RstType rstType = obj.getType();
+        assertEquals(RstType.HW,rstType);
     }
 }

@@ -2,7 +2,9 @@ package net.virtalab.vson.test;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
+import net.virtalab.vson.test.type.enumed.ComplexObj;
 import net.virtalab.vson.test.type.MyJson;
+import net.virtalab.vson.test.type.enumed.RstType;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -58,7 +60,7 @@ public class GsonTests extends Assert {
         assertTrue(o.getKey() != 0);
     }
 
-    @Test
+    @Test(expected = RuntimeException.class)
     public void badTypeAtObjectImplTest(){
         //JSE <- ISE (norm explain)
         String str = "{key:ss, value:aaa}";
@@ -84,6 +86,32 @@ public class GsonTests extends Assert {
         String str = "{\"test\":\"value\"}";
         MyJson o = gson.fromJson(str,MyJson.class);
         assertNotNull(o);
+    }
+
+    @Test
+    public void complexTypeParseToTest(){
+        String str = "{\"action\":\"reset\",\"type\":\"HW\"}";
+        ComplexObj obj = gson.fromJson(str,ComplexObj.class);
+        RstType rstType = obj.getType();
+        assertEquals(RstType.HW,rstType);
+    }
+
+    @Test
+    public void wrongComplexTypeParseToTest(){
+        String str = "{\"action\":\"reset\",\"type\":\"HW\"}";
+        ComplexObj obj = gson.fromJson(str,ComplexObj.class);
+        RstType rstType = obj.getType();
+        assertEquals(RstType.HW,rstType);
+    }
+
+    @Test
+    public void complexTypeParseFromTest(){
+        ComplexObj obj = new ComplexObj();
+        obj.setAction("reset");
+        obj.setType(RstType.HW);
+        String rslt = gson.toJson(obj,ComplexObj.class);
+        String str = "{\"action\":\"reset\",\"type\":\"HW\"}";
+        assertEquals(str,rslt);
     }
 
 }
