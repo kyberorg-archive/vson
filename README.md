@@ -34,6 +34,10 @@ It has:
  
  
 ## Release history
+ + Version 0.3.3 (Released: 18/07/14)
+ 
+ Moving to BinTray. Added maven-release-plugin into pom.xml
+ Code remains unchanged (same as 0.3.2).   
  
  + Version 0.3.2 (Released: 17/01/14)
  
